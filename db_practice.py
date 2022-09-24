@@ -14,36 +14,21 @@ def execute_query(query_sql: str) -> List:
     connection = sqlite3.connect(db_pass)
     cur = connection.cursor()
     result = cur.execute(query_sql).fetchall()
-    connection.close()
+    connection.commit()
     return result
-
 
 def unwrapper(records: List) -> None:
     '''
     Функция для вывода результата выполнения запроса
     :param records: список ответа БД
     '''
-    for record in records:
-        print(*record)
+    return '\n'.join(map(str, records))
 
 
-def get_employees() -> List:
-    '''
-    Получение всех записей из таблицы employees
-    :return: список записей
-    '''
-    query_sql = '''
-        SELECT *
-          FROM employees;
-    '''
-    return execute_query(query_sql)
 
 
-# unwrapper(get_employees())
 
-
-def get_filtered_customers(city=None,
-                           state=None) -> List:
+def get_filtered_customers(city, state) -> List:
     '''
     Возвращает клиентов, отфильтрованных по городу и штату
     :param city: город проживания, строка
@@ -52,7 +37,7 @@ def get_filtered_customers(city=None,
     '''
     query_sql = '''
         SELECT *
-          FROM customers
+            FROM customers
     '''
     if city and state:
         query_sql += f" WHERE City = '{city}' AND State = '{state}';"
@@ -60,33 +45,19 @@ def get_filtered_customers(city=None,
         query_sql += f" WHERE City = '{city}';"
     elif state:
         query_sql += f" WHERE State = '{state}';"
-    return execute_query(query_sql)
+    return unwrapper(execute_query(query_sql))
 
 
-# unwrapper(get_filtered_customers(state='SP', city='São Paulo'))
 
-
-def get_unique_customers_by_sql() -> List:
-    query_sql = '''
-        SELECT distinct FirstName
-          FROM customers;
+def get_unique_customers_by_sql(name) -> List:
+    query_sql = f'''
+        SELECT FirstName, COUNT(*) FROM customers WHERE FirstName = '{name}' GROUP BY FirstName;
     '''
-    return execute_query(query_sql)
+    return unwrapper(execute_query(query_sql))
 
-
-# unwrapper(get_unique_customers_by_sql())
-
-
-def get_unique_customers_by_python() -> List:
+def get_sum_of_invoice_items() -> List:
     query_sql = '''
-            SELECT distinct FirstName
-              FROM customers;
+        SELECT SUM(UnitPrice * Quantity) as sum FROM invoice_items;
     '''
-    records = execute_query(query_sql)
-    unique_names = set()
-    for record in records:
-        unique_names.add(record[0])
-    return list(unique_names)
+    return unwrapper(execute_query(query_sql))
 
-
-# unwrapper(get_unique_customers_by_python())
